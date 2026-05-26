@@ -134,7 +134,7 @@ android {
         buildConfigField(
             "String",
             "MDBLIST_API_KEY",
-            "\"aorzuy9py52y89nl78oaoskad\""
+            "\"" + (System.getenv("MDBLIST_API_KEY") ?: localProperties["mdblist.key"] ?: "") + "\""
         )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
