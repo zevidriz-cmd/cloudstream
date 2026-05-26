@@ -56,3 +56,15 @@ jobs:
           app/build/outputs/apk/prerelease/release/*.apk
           app/build/libs/app-sources.jar
           app/build/classes.jar
+
+    - name: Create pre-release
+      uses: softprops/action-gh-release@v2
+      with:
+        token: "${{ secrets.GITHUB_TOKEN }}"
+        tag_name: "pre-release"
+        prerelease: true
+        name: "Pre-release Build"
+        files: |
+          app/build/outputs/apk/prerelease/release/*.apk
+          app/build/libs/app-sources.jar
+          app/build/classes.jar
