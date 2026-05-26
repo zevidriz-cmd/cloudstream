@@ -524,50 +524,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private val homeViewModel: HomeViewModel by activityViewModels()
     private val accountViewModel: AccountViewModel by activityViewModels()
 
-    fun addMovies(cards: List<SearchResponse>) {
-        val ctx = context ?: run {
-            Log.e(TAG, "Context is null, aborting addMovies")
-            return
-        }
 
-        try {
-            val existingId = TvChannelUtils.getChannelId(ctx, getString(R.string.app_name))
-            if (existingId != null) {
-                Log.d(TAG, "Channel ID: $existingId")
-
-                val programCards = cards
-
-                TvChannelUtils.addPrograms(
-                    context = ctx,
-                    channelId = existingId,
-                    items = programCards
-                )
-            } else {
-                Log.d(TAG, "Channel does not exist")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error adding movies: $e")
-        }
-    }
-
-    private fun deleteAll() {
-        val ctx = context ?: run {
-            Log.e(TAG, "Context is null, aborting deleteAll")
-            return
-        }
-
-        try {
-            val existingId = TvChannelUtils.getChannelId(ctx, getString(R.string.app_name))
-            if (existingId != null) {
-                Log.d(TAG, "Channel ID: $existingId")
-                TvChannelUtils.deleteStoredPrograms(ctx)
-            } else {
-                Log.d(TAG, "Channel does not exist")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error deleting programs: ${e.message}")
-        }
-    }
 
     override fun pickLayout(): Int? =
         if (isLayout(PHONE)) R.layout.fragment_home else R.layout.fragment_home_tv
@@ -788,10 +745,15 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
         Log.i(TAG, "Adding programs $name to TV")
         lastSavedHomepage = name
         ioSafe {
-            // empty the channel
-            deleteAll()
-            // insert the program from first array
-            addMovies(data.list.list)
+            val ctx = context ?: return@ioSafe
+            try {
+                val existingId = TvChannelUtils.getChannelId(ctx, getString(R.string.app_name))
+                if (existingId != null) {
+                    TvChannelUtils.syncPrograms(ctx, existingId, data.list.list)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error syncing TV programs: $e")
+            }
         }
     }
 

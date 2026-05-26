@@ -135,6 +135,52 @@ object TvChannelUtils {
         Log.d("ProgramDelete", "Finished deleting stored programs")
     }
 
+    @SuppressLint("RestrictedApi")
+    fun syncPrograms(context: Context, channelId: Long, items: List<SearchResponse>) {
+        val existingProgramIds = context.getStoredProgramIds()
+        val existingUrls = mutableMapOf<String, Long>()
+        
+        for (id in existingProgramIds) {
+            val uri = ContentUris.withAppendedId(TvContractCompat.PreviewPrograms.CONTENT_URI, id)
+            try {
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(TvContractCompat.PreviewPrograms.COLUMN_CONTENT_ID),
+                    null, null, null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val contentId = cursor.getString(0)
+                        if (contentId != null) {
+                            existingUrls[contentId] = id
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("TvChannelUtils", "Query failed for program ID: $id", e)
+            }
+        }
+
+        val newUrls = items.map { it.url }.toSet()
+
+        for ((url, id) in existingUrls) {
+            if (!newUrls.contains(url)) {
+                val uri = ContentUris.withAppendedId(TvContractCompat.PreviewPrograms.CONTENT_URI, id)
+                try {
+                    if (context.contentResolver.delete(uri, null, null) > 0) {
+                        context.removeProgramId(id)
+                    }
+                } catch (e: Exception) {
+                    Log.e("TvChannelUtils", "Delete failed for program ID: $id", e)
+                }
+            }
+        }
+
+        val newItems = items.filter { !existingUrls.containsKey(it.url) }
+        if (newItems.isNotEmpty()) {
+            addPrograms(context, channelId, newItems)
+        }
+    }
+
     fun createTvChannel(context: Context) {
         val componentName = ComponentName(context, MainActivity::class.java)
         val iconUri = "android.resource://${context.packageName}/mipmap/ic_launcher".toUri()
