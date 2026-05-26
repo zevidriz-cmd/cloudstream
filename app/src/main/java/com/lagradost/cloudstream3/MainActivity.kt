@@ -2086,3 +2086,5 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 }
+/ /   T r i g g e r  
+ 
