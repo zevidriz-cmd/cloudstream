@@ -37,6 +37,9 @@ jobs:
         mkdir -p "${TMP_KEYSTORE_FILE_PATH}"
         cp keystore.jks "${TMP_KEYSTORE_FILE_PATH}/prerelease_keystore.keystore"
 
+    - name: Inject Google Services API Key
+      run: sed -i 's/AIzaSyDUMMYKEYFORCIBUILDONLY000000000/${{ secrets.GOOGLE_SERVICES_API_KEY }}/g' app/google-services.json
+
     - name: Run Gradle
       run: ./gradlew assemblePrereleaseRelease androidSourcesJar makeJar > gradle.log 2>&1 || (cat gradle.log ; exit 1)
       env:
