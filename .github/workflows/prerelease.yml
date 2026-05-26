@@ -43,7 +43,6 @@ jobs:
         SIGNING_KEY_ALIAS: "key0"
         SIGNING_KEY_PASSWORD: "cloudstream"
         SIGNING_STORE_PASSWORD: "cloudstream"
-        MDBLIST_API_KEY: ${{ secrets.MDBLIST_API_KEY }}
 
     - name: Upload APKs
       uses: actions/upload-artifact@v4
