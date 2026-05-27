@@ -574,6 +574,12 @@ object DataStoreHelper {
     fun removeLastWatched(parentId: Int?) {
         if (parentId == null) return
         removeKey("$currentAccount/$RESULT_RESUME_WATCHING", parentId.toString())
+        
+        val deletedArray = getKey<Array<String>>("firebase_deleted_watch_progress") ?: emptyArray()
+        if (!deletedArray.contains(parentId.toString())) {
+            setKey("firebase_deleted_watch_progress", deletedArray + parentId.toString())
+        }
+
         triggerGoogleDriveSync()
     }
 

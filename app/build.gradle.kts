@@ -31,18 +31,15 @@ abstract class GenerateGitHashTask : DefaultTask() {
         val head = headFile.get().asFile
 
         val hash = try {
-            if (head.exists()) {
-                // Read the commit hash from .git/HEAD
-                val headContent = head.readText().trim()
-                if (headContent.startsWith("ref:")) {
-                    val refPath = headContent.substring(5) // e.g., refs/heads/main
-                    val commitFile = File(head.parentFile, refPath)
-                    if (commitFile.exists()) commitFile.readText().trim() else ""
-                } else headContent // If it's a detached HEAD (commit hash directly)
-            } else "" // If .git/HEAD doesn't exist
+            val process = ProcessBuilder("git", "rev-parse", "HEAD")
+                .directory(head.parentFile.parentFile)
+                .redirectErrorStream(true)
+                .start()
+            val result = process.inputStream.bufferedReader().readText().trim()
+            if (process.waitFor() == 0) result.take(7) else ""
         } catch (_: Throwable) {
-            "" // Just set to an empty string if any exception occurs
-        }.take(7) // Get the short commit hash
+            ""
+        }
 
         val outFile = outputDir.file("git-hash.txt").get().asFile
         outFile.parentFile.mkdirs()

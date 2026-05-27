@@ -166,7 +166,8 @@ class FragmentPairTv : Fragment() {
 
                 val updateData = hashMapOf<String, Any>(
                     "status" to "authorized",
-                    "googleIdToken" to googleIdToken
+                    "googleIdToken" to googleIdToken,
+                    "email" to (email ?: "")
                 )
 
                 docRef.update(updateData).await()
@@ -176,6 +177,7 @@ class FragmentPairTv : Fragment() {
 
             } catch (e: Exception) {
                 logError(e)
+                android.util.Log.e("FragmentPairTv", "Pairing error: ", e)
                 Toast.makeText(context, "An error occurred during pairing.", Toast.LENGTH_SHORT).show()
             } finally {
                 setLoading(false)
