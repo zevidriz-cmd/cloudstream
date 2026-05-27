@@ -747,7 +747,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
         ioSafe {
             val ctx = context ?: return@ioSafe
             try {
-                val existingId = TvChannelUtils.getChannelId(ctx, getString(R.string.app_name))
+                val appName = ctx.getString(R.string.app_name)
+                val existingId = TvChannelUtils.getChannelId(ctx, appName)
                 if (existingId != null) {
                     TvChannelUtils.syncPrograms(ctx, existingId, data.list.list)
                 }
@@ -812,10 +813,12 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
 
             viewLifecycleOwner.lifecycleScope.launch {
                 com.lagradost.cloudstream3.services.PackageInstallerService.updateProgressFlow.collect { progress ->
+                    if (!isAdded) return@collect
                     if (progress == null) {
                         homeUpdateProgressContainer.isVisible = false
                         return@collect
                     }
+                    val ctx = context ?: return@collect
                     val (percentage, status) = progress
                     homeUpdateProgressContainer.isVisible = true
                     val isDownloading = status == com.lagradost.cloudstream3.utils.ApkInstaller.InstallProgressStatus.Downloading
@@ -827,7 +830,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
                     } else {
                         homeUpdateProgressPercentage.isVisible = false
                     }
-                    homeUpdateProgressText.text = getString(
+                    homeUpdateProgressText.text = ctx.getString(
                         when (status) {
                             com.lagradost.cloudstream3.utils.ApkInstaller.InstallProgressStatus.Preparing,
                             com.lagradost.cloudstream3.utils.ApkInstaller.InstallProgressStatus.Downloading -> R.string.update_notification_downloading
