@@ -395,7 +395,8 @@ class FirebaseSyncManager : AuthAPI() {
         com.lagradost.cloudstream3.CloudStreamApp.Companion.removeKey("firebase_deleted_watch_progress")
 
         val remoteProgressMap = remote.watchProgressDetails.filterValues {
-            it.resumeWatching?.parentId == null || !deletedWatchProgress.contains(it.resumeWatching.parentId.toString())
+            val resume = it.resumeWatching
+            resume?.parentId == null || !deletedWatchProgress.contains(resume.parentId.toString())
         }
         val allProgressKeys = (localProgressMap.keys + remoteProgressMap.keys).distinct()
         val mergedProgressDetails = mutableMapOf<String, WatchProgressDetailsItem>()
