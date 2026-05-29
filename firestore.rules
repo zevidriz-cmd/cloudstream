@@ -10,7 +10,7 @@ service cloud.firestore {
     // Rules for TV pairing codes bridging mechanism
     match /pairing_codes/{code} {
       allow create: if request.resource.data.status == 'pending'
-                    && request.resource.data.createdAt == request.time.toMillis();
+                    && request.resource.data.createdAt is number;
       allow read: if resource.data.createdAt > request.time.toMillis() - 5 * 60 * 1000;
       allow update: if request.auth != null
                     && resource.data.status == 'pending'

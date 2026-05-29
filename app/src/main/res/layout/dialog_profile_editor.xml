@@ -276,6 +276,7 @@
                             android:layout_height="wrap_content"
                             android:gravity="center"
                             android:inputType="numberPassword"
+                            android:imeOptions="actionDone"
                             android:maxLength="4"
                             android:textColor="@color/white"
                             android:textSize="20sp"
