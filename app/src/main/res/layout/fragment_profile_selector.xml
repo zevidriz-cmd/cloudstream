@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+    android:background="@drawable/bg_glass_gradient"
     android:clickable="true"
     android:focusable="true">
 
@@ -18,8 +18,8 @@
         android:background="?android:attr/selectableItemBackground"
         android:padding="8dp"
         android:text="Manage"
-        android:textColor="?attr/textColor"
-        android:textSize="16sp"
+        android:textColor="@color/white"
+        android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -36,7 +36,7 @@
         android:src="@drawable/ic_baseline_arrow_back_24"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/textColor" />
+        app:tint="@color/white" />
 
     <!-- Centered Header -->
     <TextView
@@ -45,8 +45,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="80dp"
         android:text="Who's Watching?"
-        android:textColor="?attr/textColor"
-        android:textSize="28sp"
+        android:textColor="@color/white"
+        android:textSize="32sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -78,8 +78,8 @@
         android:background="?android:attr/selectableItemBackground"
         android:padding="8dp"
         android:text="Skip Profile Selection"
-        android:textColor="?attr/grayTextColor"
-        android:textSize="14sp"
+        android:textColor="#E0E0E0"
+        android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

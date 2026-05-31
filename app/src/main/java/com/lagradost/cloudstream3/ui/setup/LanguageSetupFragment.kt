@@ -97,7 +97,7 @@ class LanguageSetupFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: LanguageViewHolder, position: Int) {
-            holder.binding.languageName.text = languages[position]
+            holder.binding.languageNameNative.text = languages[position]
             holder.binding.languageCheck.isVisible = (position == selectedLangIndex)
         }
 

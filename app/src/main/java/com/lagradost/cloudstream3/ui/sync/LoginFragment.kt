@@ -255,10 +255,8 @@ class LoginFragment : Fragment() {
                         Log.d(TAG, "startPairingListener: authorized — email=${email != null}, password=${password != null}, googleIdToken=${googleIdToken != null}")
                         
                         if (!googleIdToken.isNullOrBlank()) {
-                            stopPairingListener()
                             loginWithGoogleIdToken(googleIdToken, code)
                         } else if (!email.isNullOrBlank() && !password.isNullOrBlank()) {
-                            stopPairingListener()
                             loginWithCredentials(email, password, code)
                         } else {
                             Log.w(TAG, "startPairingListener: authorized but no usable credentials found")
@@ -284,17 +282,23 @@ class LoginFragment : Fragment() {
             .addOnCompleteListener(act) { task ->
                 if (task.isSuccessful) {
                     Log.d(TAG, "loginWithGoogleIdToken: Sign-in successful, uid=${auth.currentUser?.uid}")
+                    stopPairingListener()
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     firestore.collection("pairing_codes").document(code).delete()
                     onLoginSuccess()
                 } else {
                     Log.e(TAG, "loginWithGoogleIdToken: Sign-in FAILED", task.exception)
+                    binding.loginErrorText.visibility = View.VISIBLE
+                    binding.loginErrorText.text = "Google token pairing failed. Please set an email & password in your account to pair TV."
                     Toast.makeText(
                         context,
                         "Google token pairing failed. Please set an email & password in your account to pair TV.",
                         Toast.LENGTH_LONG
                     ).show()
                     setLoading(false)
+                    // Reset status to pending so phone can try again without creating a new code
+                    val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    firestore.collection("pairing_codes").document(code).update("status", "pending")
                 }
             }
     }
@@ -311,6 +315,7 @@ class LoginFragment : Fragment() {
                         ctx.setKey("firebase_email", email)
                         ctx.setKey("firebase_password", password)
                     }
+                    stopPairingListener()
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     firestore.collection("pairing_codes").document(code).delete()
                     try {
@@ -330,6 +335,7 @@ class LoginFragment : Fragment() {
                                     ctx.setKey("firebase_email", email)
                                     ctx.setKey("firebase_password", password)
                                 }
+                                stopPairingListener()
                                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                                 firestore.collection("pairing_codes").document(code).delete()
                                 try {
@@ -341,8 +347,12 @@ class LoginFragment : Fragment() {
                                 }
                             } else {
                                 Log.e(TAG, "loginWithCredentials: createUser FAILED", signUpTask.exception)
+                                binding.loginErrorText.visibility = View.VISIBLE
+                                binding.loginErrorText.text = "Pairing login failed. Incorrect credentials."
                                 Toast.makeText(context, "Pairing login failed.", Toast.LENGTH_SHORT).show()
                                 setLoading(false)
+                                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                firestore.collection("pairing_codes").document(code).update("status", "pending")
                             }
                         }
                 }
