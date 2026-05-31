@@ -791,7 +791,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
                 if (AccountManager.firebaseApi.auth.currentUser != null) {
                     findNavController().navigate(R.id.global_to_navigation_profile_selector)
                 } else {
-                    activity?.showAccountSelectLinear()
+                    if (isLayout(TV)) {
+                        findNavController().navigate(R.id.global_to_navigation_login)
+                    } else {
+                        activity?.showAccountSelectLinear()
+                    }
                 }
             }
 

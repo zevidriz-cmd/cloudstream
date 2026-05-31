@@ -80,6 +80,7 @@
                     android:layout_marginBottom="16dp"
                     android:clipToPadding="false"
                     android:nestedScrollingEnabled="false"
+                    android:nextFocusDown="@id/profile_editor_name"
                     tools:listitem="@layout/item_profile" />
 
                 <!-- Name Input Layout -->
@@ -107,7 +108,10 @@
                         android:inputType="textPersonName"
                         android:maxLength="15"
                         android:textColor="@color/white"
-                        android:textSize="16sp" />
+                        android:textSize="16sp"
+                        android:focusable="true"
+                        android:nextFocusUp="@id/profile_editor_avatar_list"
+                        android:nextFocusDown="@id/profile_editor_color_list" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -223,7 +227,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true" />
+                        android:layout_centerVertical="true"
+                        android:focusable="true"
+                        android:nextFocusUp="@id/profile_editor_color_list"
+                        android:nextFocusDown="@id/profile_editor_pin_input" />
 
                 </RelativeLayout>
 
@@ -280,7 +287,10 @@
                             android:maxLength="4"
                             android:textColor="@color/white"
                             android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:focusable="true"
+                            android:nextFocusUp="@id/profile_editor_pin_switch"
+                            android:nextFocusDown="@id/profile_editor_cancel_btn" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -307,7 +317,10 @@
                 android:textColor="?attr/grayTextColor"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp" />
+                app:cornerRadius="8dp"
+                android:focusable="true"
+                android:nextFocusRight="@id/profile_editor_save_btn"
+                android:nextFocusDown="@id/profile_editor_delete_btn" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/profile_editor_save_btn"
@@ -320,7 +333,10 @@
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp" />
+                app:cornerRadius="8dp"
+                android:focusable="true"
+                android:nextFocusLeft="@id/profile_editor_cancel_btn"
+                android:nextFocusDown="@id/profile_editor_delete_btn" />
 
         </LinearLayout>
 
@@ -337,6 +353,8 @@
             android:textStyle="bold"
             android:visibility="gone"
             app:cornerRadius="8dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/profile_editor_cancel_btn"
             tools:visibility="visible" />
 
     </LinearLayout>

@@ -184,7 +184,7 @@
             android:nextFocusLeft="@id/navigation_home"
             tools:text="Hello!"
             android:nextFocusRight="@id/home_preview_reload_provider"
-            android:nextFocusDown="@id/home_preview_info_btt" >
+            android:nextFocusDown="@id/home_master_recycler" >
             <requestFocus />
         </com.google.android.material.button.MaterialButton>
 
@@ -198,12 +198,10 @@
             android:focusable="true"
             android:nextFocusLeft="@id/home_change_api"
             android:nextFocusRight="@id/home_preview_search_button"
-            android:nextFocusUp="@id/home_preview_reload_provider"
-            android:nextFocusDown="@id/home_preview_info_btt"
+            android:nextFocusDown="@id/home_master_recycler"
             android:padding="10dp"
             tools:visibility="visible"
             android:src="@drawable/ic_refresh"
-            android:tag="@string/tv_no_focus_tag"
             android:visibility="gone"
             app:tint="@color/player_on_button_tv_attr" />
 
@@ -217,11 +215,10 @@
             android:contentDescription="@string/search"
             android:focusable="true"
             android:nextFocusLeft="@id/home_preview_reload_provider"
-            android:nextFocusRight="@id/home_switch_account"
-            android:nextFocusDown="@id/home_preview_info_btt"
+            android:nextFocusRight="@id/home_random_button_tv"
+            android:nextFocusDown="@id/home_master_recycler"
             android:padding="10dp"
             android:src="@drawable/search_icon"
-            android:tag="@string/tv_no_focus_tag"
             app:tint="@color/player_on_button_tv_attr" />
 
         <ImageView
@@ -235,10 +232,9 @@
             android:focusable="true"
             android:nextFocusLeft="@id/home_preview_search_button"
             android:nextFocusRight="@id/home_switch_account"
-            android:nextFocusDown="@id/home_preview_info_btt"
+            android:nextFocusDown="@id/home_master_recycler"
             android:padding="10dp"
             android:src="@drawable/ic_baseline_play_arrow_24"
-            android:tag="@string/tv_no_focus_tag"
             android:visibility="gone"
             app:tint="@color/player_on_button_tv_attr" />
 
@@ -250,14 +246,13 @@
             android:layout_gravity="end"
             android:background="@drawable/player_button_tv_attr_no_bg"
             android:contentDescription="@string/account"
+            android:clickable="true"
             android:focusable="true"
-            android:nextFocusLeft="@id/home_preview_search_button"
-            android:nextFocusRight="@id/home_switch_account"
-            android:nextFocusDown="@id/home_change_api"
-
+            android:nextFocusLeft="@id/home_random_button_tv"
+            android:nextFocusRight="@id/home_change_api"
+            android:nextFocusDown="@id/home_master_recycler"
             android:padding="10dp"
             android:src="@drawable/ic_outline_account_circle_24"
-            android:tag="@string/tv_no_focus_tag"
             app:tint="@color/player_on_button_tv_attr" />
     </LinearLayout>
 

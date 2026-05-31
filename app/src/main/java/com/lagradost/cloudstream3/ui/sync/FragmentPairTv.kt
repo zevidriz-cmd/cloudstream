@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.ui.sync
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -147,9 +148,11 @@ class FragmentPairTv : Fragment() {
                 val ctx = context ?: return@launch
                 val firestore = FirebaseFirestore.getInstance()
                 val docRef = firestore.collection("pairing_codes").document(code)
+                Log.d("FragmentPairTv", "completePairing: Fetching pairing doc for code=$code")
                 val snapshot = docRef.get().await()
 
                 if (!snapshot.exists()) {
+                    Log.w("FragmentPairTv", "completePairing: Document does not exist for code=$code")
                     Toast.makeText(ctx, "Invalid or expired pairing code.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch
@@ -159,25 +162,31 @@ class FragmentPairTv : Fragment() {
                 val status = snapshot.getString("status")
 
                 if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
+                    Log.w("FragmentPairTv", "completePairing: Code expired or already used — status=$status, age=${System.currentTimeMillis() - createdAt}ms")
                     Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch
                 }
 
+                // Ensure email is never null — fall back to current Firebase user email
+                val resolvedEmail = email ?: FirebaseAuth.getInstance().currentUser?.email ?: ""
+
                 val updateData = hashMapOf<String, Any>(
                     "status" to "authorized",
                     "googleIdToken" to googleIdToken,
-                    "email" to (email ?: "")
+                    "email" to resolvedEmail
                 )
 
+                Log.d("FragmentPairTv", "completePairing: Updating doc with status=authorized, email=$resolvedEmail")
                 docRef.update(updateData).await()
+                Log.d("FragmentPairTv", "completePairing: Firestore update successful for code=$code")
 
                 Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
                 activity?.onBackPressed()
 
             } catch (e: Exception) {
                 logError(e)
-                android.util.Log.e("FragmentPairTv", "Pairing error: ", e)
+                Log.e("FragmentPairTv", "completePairing: Error during pairing", e)
                 Toast.makeText(context, "An error occurred during pairing.", Toast.LENGTH_SHORT).show()
             } finally {
                 setLoading(false)
@@ -192,9 +201,11 @@ class FragmentPairTv : Fragment() {
                 val ctx = context ?: return@launch
                 val firestore = FirebaseFirestore.getInstance()
                 val docRef = firestore.collection("pairing_codes").document(code)
+                Log.d("FragmentPairTv", "completePairingWithCredentials: Fetching doc for code=$code")
                 val snapshot = docRef.get().await()
 
                 if (!snapshot.exists()) {
+                    Log.w("FragmentPairTv", "completePairingWithCredentials: Document does not exist for code=$code")
                     Toast.makeText(ctx, "Invalid or expired pairing code.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch
@@ -204,6 +215,7 @@ class FragmentPairTv : Fragment() {
                 val status = snapshot.getString("status")
 
                 if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
+                    Log.w("FragmentPairTv", "completePairingWithCredentials: Code expired or used — status=$status, age=${System.currentTimeMillis() - createdAt}ms")
                     Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch
@@ -215,13 +227,16 @@ class FragmentPairTv : Fragment() {
                     "password" to password
                 )
 
+                Log.d("FragmentPairTv", "completePairingWithCredentials: Updating doc with status=authorized, email=$email")
                 docRef.update(updateData).await()
+                Log.d("FragmentPairTv", "completePairingWithCredentials: Firestore update successful for code=$code")
 
                 Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
                 activity?.onBackPressed()
 
             } catch (e: Exception) {
                 logError(e)
+                Log.e("FragmentPairTv", "completePairingWithCredentials: Error during pairing", e)
                 Toast.makeText(context, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             } finally {
                 setLoading(false)

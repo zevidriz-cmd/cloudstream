@@ -159,11 +159,28 @@ class LoginFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 setLoading(false)
                 Toast.makeText(ctx, "Signed in successfully!", Toast.LENGTH_SHORT).show()
-                // Navigate to appropriate next step
-                if (ctx.getKey<Boolean>(HAS_DONE_SETUP_KEY, false) != true) {
-                    findNavController().navigate(R.id.action_navigation_login_to_navigation_setup_language)
-                } else {
-                    activity?.navigate(R.id.action_navigation_login_to_navigation_profile_selector)
+                Log.d(TAG, "onLoginSuccess: Navigating after successful login")
+                try {
+                    // Navigate to appropriate next step
+                    if (ctx.getKey<Boolean>(HAS_DONE_SETUP_KEY, false) != true) {
+                        findNavController().navigate(R.id.action_navigation_login_to_navigation_setup_language)
+                    } else {
+                        // Try local action first, fall back to global action
+                        try {
+                            findNavController().navigate(R.id.action_navigation_login_to_navigation_profile_selector)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "onLoginSuccess: Local nav action failed, trying global", e)
+                            findNavController().navigate(R.id.global_to_navigation_profile_selector)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "onLoginSuccess: All navigation attempts failed, going home", e)
+                    try {
+                        findNavController().navigate(R.id.global_to_navigation_home)
+                    } catch (e2: Exception) {
+                        Log.e(TAG, "onLoginSuccess: Even global home nav failed", e2)
+                        activity?.onBackPressed()
+                    }
                 }
             }
         }
@@ -218,20 +235,24 @@ class LoginFragment : Fragment() {
 
     private fun startPairingListener(code: String) {
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        Log.d(TAG, "startPairingListener: Listening on pairing_codes/$code")
         pairingListener = firestore.collection("pairing_codes")
             .document(code)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
+                    Log.e(TAG, "startPairingListener: Snapshot error", e)
                     logError(e)
                     return@addSnapshotListener
                 }
                 
                 if (snapshot != null && snapshot.exists()) {
                     val status = snapshot.getString("status")
+                    Log.d(TAG, "startPairingListener: Document status='$status'")
                     if (status == "authorized") {
                         val email = snapshot.getString("email")
                         val password = snapshot.getString("password")
                         val googleIdToken = snapshot.getString("googleIdToken")
+                        Log.d(TAG, "startPairingListener: authorized — email=${email != null}, password=${password != null}, googleIdToken=${googleIdToken != null}")
                         
                         if (!googleIdToken.isNullOrBlank()) {
                             stopPairingListener()
@@ -239,8 +260,12 @@ class LoginFragment : Fragment() {
                         } else if (!email.isNullOrBlank() && !password.isNullOrBlank()) {
                             stopPairingListener()
                             loginWithCredentials(email, password, code)
+                        } else {
+                            Log.w(TAG, "startPairingListener: authorized but no usable credentials found")
                         }
                     }
+                } else {
+                    Log.d(TAG, "startPairingListener: Document does not exist or is null")
                 }
             }
     }
@@ -252,16 +277,23 @@ class LoginFragment : Fragment() {
 
     private fun loginWithGoogleIdToken(idToken: String, code: String) {
         val act = activity ?: return
+        Log.d(TAG, "loginWithGoogleIdToken: Attempting sign-in with Google ID token for code=$code")
         setLoading(true)
         val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential)
             .addOnCompleteListener(act) { task ->
                 if (task.isSuccessful) {
+                    Log.d(TAG, "loginWithGoogleIdToken: Sign-in successful, uid=${auth.currentUser?.uid}")
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     firestore.collection("pairing_codes").document(code).delete()
                     onLoginSuccess()
                 } else {
-                    Toast.makeText(context, "Pairing Google login failed.", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "loginWithGoogleIdToken: Sign-in FAILED", task.exception)
+                    Toast.makeText(
+                        context,
+                        "Google token pairing failed. Please set an email & password in your account to pair TV.",
+                        Toast.LENGTH_LONG
+                    ).show()
                     setLoading(false)
                 }
             }
@@ -269,21 +301,46 @@ class LoginFragment : Fragment() {
 
     private fun loginWithCredentials(email: String, password: String, code: String) {
         val act = activity ?: return
+        Log.d(TAG, "loginWithCredentials: Attempting sign-in with email=$email for code=$code")
         setLoading(true)
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(act) { task ->
                 if (task.isSuccessful) {
+                    Log.d(TAG, "loginWithCredentials: Sign-in successful, uid=${auth.currentUser?.uid}")
+                    context?.let { ctx ->
+                        ctx.setKey("firebase_email", email)
+                        ctx.setKey("firebase_password", password)
+                    }
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     firestore.collection("pairing_codes").document(code).delete()
-                    onLoginSuccess()
+                    try {
+                        onLoginSuccess()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "loginWithCredentials: onLoginSuccess navigation crashed", e)
+                        Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()
+                        setLoading(false)
+                    }
                 } else {
+                    Log.d(TAG, "loginWithCredentials: Sign-in failed, trying createUser", task.exception)
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener(act) { signUpTask ->
                             if (signUpTask.isSuccessful) {
+                                Log.d(TAG, "loginWithCredentials: createUser successful, uid=${auth.currentUser?.uid}")
+                                context?.let { ctx ->
+                                    ctx.setKey("firebase_email", email)
+                                    ctx.setKey("firebase_password", password)
+                                }
                                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                                 firestore.collection("pairing_codes").document(code).delete()
-                                onLoginSuccess()
+                                try {
+                                    onLoginSuccess()
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "loginWithCredentials: onLoginSuccess navigation crashed after createUser", e)
+                                    Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()
+                                    setLoading(false)
+                                }
                             } else {
+                                Log.e(TAG, "loginWithCredentials: createUser FAILED", signUpTask.exception)
                                 Toast.makeText(context, "Pairing login failed.", Toast.LENGTH_SHORT).show()
                                 setLoading(false)
                             }
