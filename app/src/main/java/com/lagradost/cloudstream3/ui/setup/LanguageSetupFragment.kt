@@ -87,6 +87,18 @@ class LanguageSetupFragment : Fragment() {
                     notifyItemChanged(prevIndex)
                     notifyItemChanged(bindingAdapterPosition)
                 }
+                binding.root.setOnFocusChangeListener { view, hasFocus ->
+                    val card = view as? com.google.android.material.card.MaterialCardView
+                    if (hasFocus) {
+                        view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start()
+                        card?.strokeColor = android.graphics.Color.parseColor("#3b82f6")
+                        card?.strokeWidth = 4
+                    } else {
+                        view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
+                        card?.strokeColor = android.graphics.Color.parseColor("#1AFFFFFF")
+                        card?.strokeWidth = 1
+                    }
+                }
             }
         }
 

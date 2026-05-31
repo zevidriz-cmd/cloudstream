@@ -121,6 +121,14 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
                     }
                 }
             }
+            
+            keyView.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start()
+                } else {
+                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
+                }
+            }
         }
 
         binding.keyBackspace.setOnClickListener {
@@ -130,9 +138,23 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
                 binding.pinErrorText.visibility = View.INVISIBLE
             }
         }
+        binding.keyBackspace.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start()
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
+            }
+        }
 
         binding.keyCancel.setOnClickListener {
             dismiss()
+        }
+        binding.keyCancel.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start()
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
+            }
         }
     }
 
