@@ -4,12 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0b1326"
+    android:background="@color/primaryBlackBackground"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="24dp">
 
-    <!-- Avatar & Profile Details -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/pin_avatar_card"
         android:layout_width="80dp"
@@ -209,8 +208,8 @@
             <TextView
                 android:id="@+id/key_cancel"
                 style="@style/PinKeyStyle"
-                android:enabled="false"
-                android:focusable="false"
+                android:enabled="true"
+                android:focusable="true"
                 android:nextFocusLeft="@id/key_cancel"
                 android:nextFocusRight="@id/key_0"
                 android:nextFocusUp="@id/key_7"

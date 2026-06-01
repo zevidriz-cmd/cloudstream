@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "cloudstream-sync-e558e"
+  },
   "targets": {},
   "etags": {}
 }

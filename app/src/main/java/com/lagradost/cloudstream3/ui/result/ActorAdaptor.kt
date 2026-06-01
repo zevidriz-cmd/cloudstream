@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.ui.NoStateAdapter
 import com.lagradost.cloudstream3.ui.ViewHolderState
 import com.lagradost.cloudstream3.ui.newSharedPool
 import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
+import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 
@@ -69,6 +70,13 @@ class ActorAdaptor(
                 }
 
                 itemView.setOnFocusChangeListener { v, hasFocus ->
+                    if (isLayout(TV)) {
+                        if (hasFocus) {
+                            v.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+                        } else {
+                            v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+                        }
+                    }
                     if (hasFocus) {
                         focusCallback(v)
                     }

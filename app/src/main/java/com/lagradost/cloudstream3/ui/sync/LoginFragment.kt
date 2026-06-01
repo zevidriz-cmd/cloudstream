@@ -28,6 +28,8 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.tasks.await
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 
 class LoginFragment : Fragment() {
@@ -245,16 +247,44 @@ class LoginFragment : Fragment() {
         binding.loginSkipButton.requestFocus()
     }
 
+    private fun handlePairingAuthorized(snapshot: com.google.firebase.firestore.DocumentSnapshot, code: String) {
+        if (!isCompletingPairing) {
+            isCompletingPairing = true
+            setLoading(true)
+            binding.loginTitle.text = "Pairing approved"
+            binding.loginSubtitle.text = "Signing in on this TV..."
+            val email = snapshot.getString("email")
+            val password = snapshot.getString("password")
+            val googleIdToken = snapshot.getString("googleIdToken")
+            Log.d(TAG, "handlePairingAuthorized: authorized — email=${email != null}, password=${password != null}, googleIdToken=${googleIdToken != null}")
+            
+            if (!googleIdToken.isNullOrBlank()) {
+                loginWithGoogleIdToken(googleIdToken, code)
+            } else if (!email.isNullOrBlank() && !password.isNullOrBlank()) {
+                loginWithCredentials(email, password, code)
+            } else {
+                Log.w(TAG, "handlePairingAuthorized: authorized but no usable credentials found")
+                isCompletingPairing = false
+                binding.loginErrorText.visibility = View.VISIBLE
+                binding.loginErrorText.text = "Pairing approved, but no sign-in credentials were received. Try pairing again."
+                setLoading(false)
+            }
+        }
+    }
+
     private var pairingListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var pairingPollingJob: kotlinx.coroutines.Job? = null
 
     private fun startPairingListener(code: String) {
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         Log.d(TAG, "startPairingListener: Listening on pairing_codes/$code")
+        
+        // 1. Real-time Snapshot Listener
         pairingListener = firestore.collection(TvPairing.COLLECTION)
             .document(code)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
-                    Log.e(TAG, "startPairingListener: Snapshot error", e)
+                    Log.e(TAG, "startPairingListener: Snapshot error (might fallback to polling)", e)
                     logError(e)
                     return@addSnapshotListener
                 }
@@ -262,37 +292,34 @@ class LoginFragment : Fragment() {
                 if (snapshot != null && snapshot.exists()) {
                     val status = snapshot.getString("status")
                     Log.d(TAG, "startPairingListener: Document status='$status'")
-                    if (status == "authorized" && !isCompletingPairing) {
-                        isCompletingPairing = true
-                        setLoading(true)
-                        binding.loginTitle.text = "Pairing approved"
-                        binding.loginSubtitle.text = "Signing in on this TV..."
-                        val email = snapshot.getString("email")
-                        val password = snapshot.getString("password")
-                        val googleIdToken = snapshot.getString("googleIdToken")
-                        Log.d(TAG, "startPairingListener: authorized — email=${email != null}, password=${password != null}, googleIdToken=${googleIdToken != null}")
-                        
-                        if (!googleIdToken.isNullOrBlank()) {
-                            loginWithGoogleIdToken(googleIdToken, code)
-                        } else if (!email.isNullOrBlank() && !password.isNullOrBlank()) {
-                            loginWithCredentials(email, password, code)
-                        } else {
-                            Log.w(TAG, "startPairingListener: authorized but no usable credentials found")
-                            isCompletingPairing = false
-                            binding.loginErrorText.visibility = View.VISIBLE
-                            binding.loginErrorText.text = "Pairing approved, but no sign-in credentials were received. Try pairing again."
-                            setLoading(false)
-                        }
+                    if (status == "authorized") {
+                        handlePairingAuthorized(snapshot, code)
                     }
                 } else {
                     Log.d(TAG, "startPairingListener: Document does not exist or is null")
                 }
             }
+
+        // 2. Resource-safe 2-second background coroutine polling fallback
+        pairingPollingJob = lifecycleScope.launch(Dispatchers.IO) {
+            val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
+            while (isActive && !isCompletingPairing) {
+                kotlinx.coroutines.delay(2000)
+                val snapshot = runCatching { docRef.get().await() }.getOrNull() ?: continue
+                if (snapshot.exists() && snapshot.getString("status") == "authorized") {
+                    withContext(Dispatchers.Main) {
+                        handlePairingAuthorized(snapshot, code)
+                    }
+                }
+            }
+        }
     }
 
     private fun stopPairingListener() {
         pairingListener?.remove()
         pairingListener = null
+        pairingPollingJob?.cancel()
+        pairingPollingJob = null
     }
 
     private fun loginWithGoogleIdToken(idToken: String, code: String) {

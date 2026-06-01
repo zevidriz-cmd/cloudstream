@@ -52,8 +52,13 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
     override fun onStart() {
         super.onStart()
         dialog?.setCanceledOnTouchOutside(false)
-        dialog?.setOnKeyListener { _, keyCode, _ ->
-            keyCode == KeyEvent.KEYCODE_BACK
+        dialog?.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                dismiss()
+                true
+            } else {
+                keyCode == KeyEvent.KEYCODE_BACK
+            }
         }
         dialog?.window?.apply {
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -152,9 +157,12 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
             }
         }
 
-        binding.keyCancel.isVisible = false
-        binding.keyCancel.isEnabled = false
-        binding.keyCancel.isFocusable = false
+        binding.keyCancel.isVisible = true
+        binding.keyCancel.isEnabled = true
+        binding.keyCancel.isFocusable = true
+        binding.keyCancel.setOnClickListener {
+            dismiss()
+        }
         binding.keyCancel.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start()

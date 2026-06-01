@@ -477,5 +477,25 @@ class EpisodeAdapter(
                 }
             }
         }
+
+        itemView.setOnFocusChangeListener { view, hasFocus ->
+            if (isLayout(TV)) {
+                if (hasFocus) {
+                    view.animate()
+                        .scaleX(1.05f)
+                        .scaleY(1.05f)
+                        .setDuration(150)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .start()
+                } else {
+                    view.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(150)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .start()
+                }
+            }
+        }
     }
 }

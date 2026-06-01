@@ -109,6 +109,8 @@ open class ParentItemAdapter(
                     hasNext = item.hasNext
                     submitList(item.list.list)
                 }
+                homeChildRecyclerview.onFlingListener = null
+                androidx.recyclerview.widget.LinearSnapHelper().attachToRecyclerView(homeChildRecyclerview)
             } else {
                 currentAdapter.apply {
                     isHorizontal = info.isHorizontalImages

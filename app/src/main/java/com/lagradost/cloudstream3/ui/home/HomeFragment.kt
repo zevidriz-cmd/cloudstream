@@ -678,7 +678,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             val createdAt = snapshot.getLong("createdAt") ?: 0L
             val status = snapshot.getString("status")
 
-            if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
+            if (status != "pending" || Math.abs(System.currentTimeMillis() - createdAt) > 30 * 60 * 1000) {
                 showPairingToast("Pairing code has expired or is already paired.")
                 return@addOnSuccessListener
             }
@@ -723,7 +723,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             val createdAt = snapshot.getLong("createdAt") ?: 0L
             val status = snapshot.getString("status")
 
-            if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
+            if (status != "pending" || Math.abs(System.currentTimeMillis() - createdAt) > 30 * 60 * 1000) {
                 showPairingToast("Pairing code has expired or is already paired.")
                 return@addOnSuccessListener
             }

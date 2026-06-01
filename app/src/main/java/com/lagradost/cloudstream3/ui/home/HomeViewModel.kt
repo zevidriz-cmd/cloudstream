@@ -150,7 +150,7 @@ class HomeViewModel : ViewModel() {
     private val _resumeWatching = MutableLiveData<List<SearchResponse>>()
     private val _preview = MutableLiveData<Resource<Pair<Boolean, List<LoadResponse>>>>()
     private val previewResponses = CopyOnWriteArrayList<LoadResponse>()
-    private val previewResponsesAdded = mutableSetOf<String>()
+    private val previewResponsesAdded = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     val resumeWatching: LiveData<List<SearchResponse>> = _resumeWatching
     val preview: LiveData<Resource<Pair<Boolean, List<LoadResponse>>>> = _preview
@@ -233,7 +233,7 @@ class HomeViewModel : ViewModel() {
         MutableLiveData<Resource<Map<String, ExpandableHomepageList>>>(Resource.Loading())
     val page: LiveData<Resource<Map<String, ExpandableHomepageList>>> = _page
 
-    val lock: MutableSet<String> = mutableSetOf()
+    val lock: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     suspend fun expandAndReturn(name: String): ExpandableHomepageList? {
         if (lock.contains(name)) return null

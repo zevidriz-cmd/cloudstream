@@ -105,8 +105,8 @@ android {
         applicationId = "com.lagradost.cloudstream3"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 71
-        versionName = "4.7.3"
+        versionCode = 72
+        versionName = "4.8.0"
 
         manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 

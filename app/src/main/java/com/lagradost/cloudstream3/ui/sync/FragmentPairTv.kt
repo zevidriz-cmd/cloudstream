@@ -168,9 +168,10 @@ class FragmentPairTv : Fragment() {
 
                 val createdAt = snapshot.getLong("createdAt") ?: 0L
                 val status = snapshot.getString("status")
+                val age = Math.abs(System.currentTimeMillis() - createdAt)
 
-                if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
-                    Log.w("FragmentPairTv", "completePairing: Code expired or already used — status=$status, age=${System.currentTimeMillis() - createdAt}ms")
+                if (status != "pending" || age > 30 * 60 * 1000) {
+                    Log.w("FragmentPairTv", "completePairing: Code expired or already used — status=$status, age=${age}ms")
                     Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch
@@ -226,9 +227,10 @@ class FragmentPairTv : Fragment() {
 
                 val createdAt = snapshot.getLong("createdAt") ?: 0L
                 val status = snapshot.getString("status")
+                val age = Math.abs(System.currentTimeMillis() - createdAt)
 
-                if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
-                    Log.w("FragmentPairTv", "completePairingWithCredentials: Code expired or used — status=$status, age=${System.currentTimeMillis() - createdAt}ms")
+                if (status != "pending" || age > 30 * 60 * 1000) {
+                    Log.w("FragmentPairTv", "completePairingWithCredentials: Code expired or used — status=$status, age=${age}ms")
                     Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
                     return@launch

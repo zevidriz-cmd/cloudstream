@@ -239,6 +239,23 @@ object SearchResultBuilder {
 
         itemView.setOnFocusChangeListener { view, b ->
             focus(view, b)
+            if (isLayout(TV)) {
+                if (b) {
+                    view.animate()
+                        .scaleX(1.05f)
+                        .scaleY(1.05f)
+                        .setDuration(150)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .start()
+                } else {
+                    view.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(150)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .start()
+                }
+            }
         }
 
         when (card) {

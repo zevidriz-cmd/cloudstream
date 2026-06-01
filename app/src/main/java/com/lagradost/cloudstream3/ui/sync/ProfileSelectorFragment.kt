@@ -59,7 +59,8 @@ class ProfileSelectorFragment : Fragment() {
         }
 
         val screenWidthDp = context?.resources?.configuration?.screenWidthDp ?: 320
-        val spanCount = if (screenWidthDp >= 600) 4 else 2
+        val isTv = com.lagradost.cloudstream3.ui.settings.Globals.isLayout(com.lagradost.cloudstream3.ui.settings.Globals.TV)
+        val spanCount = if (isTv) 5 else if (screenWidthDp >= 600) 4 else 2
 
         binding.profileSelectorGrid.apply {
             layoutManager = GridLayoutManager(context, spanCount)

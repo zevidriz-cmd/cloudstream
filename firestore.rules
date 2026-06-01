@@ -11,11 +11,11 @@ service cloud.firestore {
     match /pairing_codes/{code} {
       allow create: if request.resource.data.status == 'pending'
                     && request.resource.data.createdAt is number;
-      allow read: if resource.data.createdAt > request.time.toMillis() - 5 * 60 * 1000;
+      allow read: if resource.data.createdAt > request.time.toMillis() - 24 * 60 * 60 * 1000;
       allow update: if request.auth != null
                     && resource.data.status == 'pending'
                     && request.resource.data.status == 'authorized'
-                    && resource.data.createdAt > request.time.toMillis() - 5 * 60 * 1000;
+                    && resource.data.createdAt > request.time.toMillis() - 24 * 60 * 60 * 1000;
       allow delete: if true;
     }
     
