@@ -150,7 +150,7 @@ class HomeViewModel : ViewModel() {
     private val _resumeWatching = MutableLiveData<List<SearchResponse>>()
     private val _preview = MutableLiveData<Resource<Pair<Boolean, List<LoadResponse>>>>()
     private val previewResponses = CopyOnWriteArrayList<LoadResponse>()
-    private val previewResponsesAdded = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val previewResponsesAdded = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
 
     val resumeWatching: LiveData<List<SearchResponse>> = _resumeWatching
     val preview: LiveData<Resource<Pair<Boolean, List<LoadResponse>>>> = _preview
