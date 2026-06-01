@@ -48,6 +48,22 @@ class AccountSelectActivity : FragmentActivity(), BiometricCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val onBackPressedCallback = object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val isEditingFromMainActivity = intent.getBooleanExtra(
+                    "isEditingFromMainActivity",
+                    false
+                )
+                if (!isEditingFromMainActivity) {
+                    finishAffinity()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+
         // Are we editing and coming from MainActivity?
         val isEditingFromMainActivity = intent.getBooleanExtra(
             "isEditingFromMainActivity",
@@ -225,21 +241,6 @@ class AccountSelectActivity : FragmentActivity(), BiometricCallback {
             finishAffinity()
         } else {
             finish()
-        }
-    }
-
-    @SuppressLint("GestureBackNavigation")
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        val isEditingFromMainActivity = intent.getBooleanExtra(
-            "isEditingFromMainActivity",
-            false
-        )
-        if (!isEditingFromMainActivity) {
-            finishAffinity()
-        } else {
-            @Suppress("DEPRECATION")
-            super.onBackPressed()
         }
     }
 }

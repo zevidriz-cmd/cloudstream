@@ -46,6 +46,7 @@ class ProfileSelectorFragment : Fragment() {
 
         setupRecyclerView()
         setupListeners()
+        setupBackNavigation()
     }
 
     override fun onResume() {
@@ -81,21 +82,20 @@ class ProfileSelectorFragment : Fragment() {
                 binding.profileSelectorTitle.text = "Who's Watching?"
             }
         }
+    }
 
-        binding.profileSelectorBackBtn.setOnClickListener {
-            activity?.onBackPressed()
-        }
-
-        binding.profileSelectorInfo.setOnClickListener {
-            // Skip sync
-            val ctx = requireContext()
-            if (ctx.getKey<Boolean>(HAS_DONE_SETUP_KEY, false) != true) {
-                ctx.setKey(HAS_DONE_SETUP_KEY, true)
-                activity?.navigate(R.id.action_navigation_profile_selector_to_navigation_home)
-            } else {
-                activity?.onBackPressed()
+    private fun setupBackNavigation() {
+        val callback = object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!hasFirebaseLoggedIn) {
+                    activity?.finishAffinity()
+                } else {
+                    isEnabled = false
+                    activity?.onBackPressedDispatcher?.onBackPressed()
+                }
             }
         }
+        activity?.onBackPressedDispatcher?.addCallback(viewLifecycleOwner, callback)
     }
 
     private fun loadProfiles() {
