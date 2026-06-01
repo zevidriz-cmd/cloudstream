@@ -73,6 +73,7 @@
                 app:iconGravity="textStart"
                 app:strokeColor="#33FFFFFF"
                 android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:nextFocusDown="@id/login_email_input" />
 
             <LinearLayout
@@ -122,6 +123,7 @@
                     android:imeOptions="actionNext"
                     android:textColor="@color/textColor"
                     android:focusable="true"
+                    android:focusableInTouchMode="true"
                     android:nextFocusUp="@id/login_google_button"
                     android:nextFocusDown="@id/login_password_input" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -145,6 +147,7 @@
                     android:imeOptions="actionDone"
                     android:textColor="@color/textColor"
                     android:focusable="true"
+                    android:focusableInTouchMode="true"
                     android:nextFocusUp="@id/login_email_input"
                     android:nextFocusDown="@id/login_sign_in_button" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -159,6 +162,7 @@
                 app:backgroundTint="?attr/colorPrimary"
                 android:textColor="@color/white"
                 android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:nextFocusUp="@id/login_password_input"
                 android:nextFocusDown="@id/login_skip_button" />
 
@@ -173,6 +177,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:background="?attr/selectableItemBackground"
                 android:nextFocusUp="@id/login_sign_in_button" />
 
