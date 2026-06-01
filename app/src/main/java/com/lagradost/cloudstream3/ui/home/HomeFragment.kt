@@ -665,13 +665,13 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
 
     /** Complete pairing using a Google ID token */
     private fun completePairingWithToken(code: String, googleIdToken: String) {
-        val ctx = context ?: return
+        context ?: return
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
         
         docRef.get().addOnSuccessListener { snapshot ->
             if (!snapshot.exists()) {
-                Toast.makeText(ctx, "Invalid or expired pairing code.", Toast.LENGTH_SHORT).show()
+                showPairingToast("Invalid or expired pairing code.")
                 return@addOnSuccessListener
             }
 
@@ -679,7 +679,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             val status = snapshot.getString("status")
 
             if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
-                Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
+                showPairingToast("Pairing code has expired or is already paired.")
                 return@addOnSuccessListener
             }
 
@@ -689,33 +689,34 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             )
 
             docRef.update(updateData).addOnSuccessListener {
-                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (TvPairing.waitForTvCompletion(docRef)) {
-                        Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                showPairingToast("Pairing approved. Waiting for TV sign-in...")
+                lifecycleScope.launch {
+                    val completed = TvPairing.waitForTvCompletion(docRef)
+                    if (completed) {
+                        showPairingToast("TV paired successfully!", Toast.LENGTH_LONG)
                     } else {
-                        Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                        showPairingToast("TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG)
                     }
                 }
             }.addOnFailureListener { e ->
                 logError(e)
-                Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                showPairingToast("Pairing error: ${e.localizedMessage}")
             }
         }.addOnFailureListener { e ->
             logError(e)
-            Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            showPairingToast("Pairing error: ${e.localizedMessage}")
         }
     }
 
     /** Complete pairing using email/password credentials */
     private fun completePairingWithCredentials(code: String, email: String, password: String) {
-        val ctx = context ?: return
+        context ?: return
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
         
         docRef.get().addOnSuccessListener { snapshot ->
             if (!snapshot.exists()) {
-                Toast.makeText(ctx, "Invalid or expired pairing code.", Toast.LENGTH_SHORT).show()
+                showPairingToast("Invalid or expired pairing code.")
                 return@addOnSuccessListener
             }
 
@@ -723,7 +724,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             val status = snapshot.getString("status")
 
             if (status != "pending" || System.currentTimeMillis() - createdAt > 5 * 60 * 1000) {
-                Toast.makeText(ctx, "Pairing code has expired or is already paired.", Toast.LENGTH_SHORT).show()
+                showPairingToast("Pairing code has expired or is already paired.")
                 return@addOnSuccessListener
             }
 
@@ -734,22 +735,28 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             )
 
             docRef.update(updateData).addOnSuccessListener {
-                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (TvPairing.waitForTvCompletion(docRef)) {
-                        Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                showPairingToast("Pairing approved. Waiting for TV sign-in...")
+                lifecycleScope.launch {
+                    val completed = TvPairing.waitForTvCompletion(docRef)
+                    if (completed) {
+                        showPairingToast("TV paired successfully!", Toast.LENGTH_LONG)
                     } else {
-                        Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                        showPairingToast("TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG)
                     }
                 }
             }.addOnFailureListener { e ->
                 logError(e)
-                Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                showPairingToast("Pairing error: ${e.localizedMessage}")
             }
         }.addOnFailureListener { e ->
             logError(e)
-            Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            showPairingToast("Pairing error: ${e.localizedMessage}")
         }
+    }
+
+    private fun showPairingToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
+        val ctx = context ?: return
+        Toast.makeText(ctx, message, duration).show()
     }
 
     private var bottomSheetDialog: BottomSheetDialog? = null

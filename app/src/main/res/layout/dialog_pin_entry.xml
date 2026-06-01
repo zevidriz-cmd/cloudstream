@@ -181,7 +181,7 @@
                 android:nextFocusLeft="@id/key_7"
                 android:nextFocusRight="@id/key_8"
                 android:nextFocusUp="@id/key_4"
-                android:nextFocusDown="@id/key_cancel"
+                android:nextFocusDown="@id/key_0"
                 android:text="7" />
             <TextView
                 android:id="@+id/key_8"
@@ -209,6 +209,8 @@
             <TextView
                 android:id="@+id/key_cancel"
                 style="@style/PinKeyStyle"
+                android:enabled="false"
+                android:focusable="false"
                 android:nextFocusLeft="@id/key_cancel"
                 android:nextFocusRight="@id/key_0"
                 android:nextFocusUp="@id/key_7"
@@ -220,7 +222,7 @@
             <TextView
                 android:id="@+id/key_0"
                 style="@style/PinKeyStyle"
-                android:nextFocusLeft="@id/key_cancel"
+                android:nextFocusLeft="@id/key_0"
                 android:nextFocusRight="@id/key_backspace"
                 android:nextFocusUp="@id/key_8"
                 android:nextFocusDown="@id/key_0"

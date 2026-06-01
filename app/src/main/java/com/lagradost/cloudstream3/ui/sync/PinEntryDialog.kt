@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.ui.sync
 import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -45,10 +46,15 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NO_TITLE, 0)
+        isCancelable = false
     }
 
     override fun onStart() {
         super.onStart()
+        dialog?.setCanceledOnTouchOutside(false)
+        dialog?.setOnKeyListener { _, keyCode, _ ->
+            keyCode == KeyEvent.KEYCODE_BACK
+        }
         dialog?.window?.apply {
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setBackgroundDrawableResource(android.R.color.transparent)
@@ -146,9 +152,9 @@ class PinEntryDialog : BaseDialogFragment<DialogPinEntryBinding>(
             }
         }
 
-        binding.keyCancel.setOnClickListener {
-            dismiss()
-        }
+        binding.keyCancel.isVisible = false
+        binding.keyCancel.isEnabled = false
+        binding.keyCancel.isFocusable = false
         binding.keyCancel.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start()
