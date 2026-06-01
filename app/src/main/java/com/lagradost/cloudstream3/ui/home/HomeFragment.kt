@@ -68,6 +68,7 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
+import com.lagradost.cloudstream3.ui.sync.TvPairing
 import com.lagradost.cloudstream3.utils.AppContextUtils.filterProviderByPreferredMedia
 import com.lagradost.cloudstream3.utils.AppContextUtils.getApiProviderLangSettings
 import com.lagradost.cloudstream3.utils.AppContextUtils.isNetworkAvailable
@@ -570,8 +571,9 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             try {
                 val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)!!
                 val code = pendingPairingCode
-                if (code != null && account.idToken != null) {
-                    completePairingWithToken(code, account.idToken!!)
+                val idToken = account.idToken
+                if (code != null && !idToken.isNullOrBlank()) {
+                    completePairingWithToken(code, idToken)
                 } else {
                     Toast.makeText(context, "Google sign in did not return a token.", Toast.LENGTH_SHORT).show()
                 }
@@ -592,12 +594,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private fun submitPairingCode(rawCode: String) {
         val ctx = context ?: return
 
-        // Parse URI if it's a deep link
-        val code = try {
-            val uri = android.net.Uri.parse(rawCode)
-            uri.getQueryParameter("code") ?: rawCode
-        } catch (e: Exception) {
-            rawCode
+        val code = TvPairing.normalizeCode(rawCode)
+        if (code == null) {
+            Toast.makeText(ctx, "Invalid pairing code.", Toast.LENGTH_SHORT).show()
+            return
         }
 
         val email = com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey<String>("firebase_email")
@@ -628,7 +628,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
                     val googleSignInClient = com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(ctx, gso)
                     
                     googleSignInClient.silentSignIn().addOnSuccessListener { account ->
-                        completePairingWithToken(code, account.idToken!!)
+                        val idToken = account.idToken
+                        if (idToken.isNullOrBlank()) {
+                            pendingPairingCode = code
+                            val interactiveGso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+                                .requestIdToken(ctx.getString(R.string.default_web_client_id))
+                                .requestEmail()
+                                .build()
+                            val interactiveClient = com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(ctx, interactiveGso)
+                            googleSignInForPairingLauncher.launch(interactiveClient.signInIntent)
+                        } else {
+                            completePairingWithToken(code, idToken)
+                        }
                     }.addOnFailureListener { e ->
                         logError(e)
                         pendingPairingCode = code
@@ -656,7 +667,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private fun completePairingWithToken(code: String, googleIdToken: String) {
         val ctx = context ?: return
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-        val docRef = firestore.collection("pairing_codes").document(code)
+        val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
         
         docRef.get().addOnSuccessListener { snapshot ->
             if (!snapshot.exists()) {
@@ -678,7 +689,14 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             )
 
             docRef.update(updateData).addOnSuccessListener {
-                Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (TvPairing.waitForTvCompletion(docRef)) {
+                        Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                    }
+                }
             }.addOnFailureListener { e ->
                 logError(e)
                 Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
@@ -693,7 +711,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private fun completePairingWithCredentials(code: String, email: String, password: String) {
         val ctx = context ?: return
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-        val docRef = firestore.collection("pairing_codes").document(code)
+        val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
         
         docRef.get().addOnSuccessListener { snapshot ->
             if (!snapshot.exists()) {
@@ -716,7 +734,14 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             )
 
             docRef.update(updateData).addOnSuccessListener {
-                Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (TvPairing.waitForTvCompletion(docRef)) {
+                        Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                    }
+                }
             }.addOnFailureListener { e ->
                 logError(e)
                 Toast.makeText(ctx, "Pairing error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()

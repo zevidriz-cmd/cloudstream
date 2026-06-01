@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -41,13 +40,20 @@ class LoginFragment : Fragment() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
+    private var isCompletingPairing = false
 
     private val googleSignInLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)!!
-                firebaseAuthWithGoogle(account.idToken!!)
+                val idToken = account.idToken
+                if (idToken.isNullOrBlank()) {
+                    Toast.makeText(context, "Google sign in did not return a token.", Toast.LENGTH_SHORT).show()
+                    setLoading(false)
+                } else {
+                    firebaseAuthWithGoogle(idToken)
+                }
             } catch (e: ApiException) {
                 logError(e)
                 Toast.makeText(context, "Google sign in failed", Toast.LENGTH_SHORT).show()
@@ -187,6 +193,7 @@ class LoginFragment : Fragment() {
     }
 
     private fun setLoading(isLoading: Boolean) {
+        val binding = _binding ?: return
         binding.loginLoading.isVisible = isLoading
         binding.loginGoogleButton.isEnabled = !isLoading
         binding.loginSignInButton.isEnabled = !isLoading
@@ -207,7 +214,7 @@ class LoginFragment : Fragment() {
             "status" to "pending",
             "createdAt" to System.currentTimeMillis()
         )
-        firestore.collection("pairing_codes")
+        firestore.collection(TvPairing.COLLECTION)
             .document(code)
             .set(data)
             .addOnFailureListener { e ->
@@ -229,6 +236,13 @@ class LoginFragment : Fragment() {
         
         binding.loginTitle.text = "Pair your device"
         binding.loginSubtitle.text = "Scan this QR code with your phone, or enter this code in Settings -> Pair TV:\n\nCode: $code"
+        binding.loginGoogleButton.isVisible = false
+        binding.loginDivider.isVisible = false
+        binding.loginEmailLayout.isVisible = false
+        binding.loginPasswordLayout.isVisible = false
+        binding.loginSignInButton.isVisible = false
+        binding.loginSkipButton.nextFocusUpId = binding.loginSkipButton.id
+        binding.loginSkipButton.requestFocus()
     }
 
     private var pairingListener: com.google.firebase.firestore.ListenerRegistration? = null
@@ -236,7 +250,7 @@ class LoginFragment : Fragment() {
     private fun startPairingListener(code: String) {
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         Log.d(TAG, "startPairingListener: Listening on pairing_codes/$code")
-        pairingListener = firestore.collection("pairing_codes")
+        pairingListener = firestore.collection(TvPairing.COLLECTION)
             .document(code)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
@@ -248,7 +262,11 @@ class LoginFragment : Fragment() {
                 if (snapshot != null && snapshot.exists()) {
                     val status = snapshot.getString("status")
                     Log.d(TAG, "startPairingListener: Document status='$status'")
-                    if (status == "authorized") {
+                    if (status == "authorized" && !isCompletingPairing) {
+                        isCompletingPairing = true
+                        setLoading(true)
+                        binding.loginTitle.text = "Pairing approved"
+                        binding.loginSubtitle.text = "Signing in on this TV..."
                         val email = snapshot.getString("email")
                         val password = snapshot.getString("password")
                         val googleIdToken = snapshot.getString("googleIdToken")
@@ -260,6 +278,10 @@ class LoginFragment : Fragment() {
                             loginWithCredentials(email, password, code)
                         } else {
                             Log.w(TAG, "startPairingListener: authorized but no usable credentials found")
+                            isCompletingPairing = false
+                            binding.loginErrorText.visibility = View.VISIBLE
+                            binding.loginErrorText.text = "Pairing approved, but no sign-in credentials were received. Try pairing again."
+                            setLoading(false)
                         }
                     }
                 } else {
@@ -284,9 +306,10 @@ class LoginFragment : Fragment() {
                     Log.d(TAG, "loginWithGoogleIdToken: Sign-in successful, uid=${auth.currentUser?.uid}")
                     stopPairingListener()
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    firestore.collection("pairing_codes").document(code).delete()
+                    firestore.collection(TvPairing.COLLECTION).document(code).delete()
                     onLoginSuccess()
                 } else {
+                    isCompletingPairing = false
                     Log.e(TAG, "loginWithGoogleIdToken: Sign-in FAILED", task.exception)
                     binding.loginErrorText.visibility = View.VISIBLE
                     binding.loginErrorText.text = "Google token pairing failed. Please set an email & password in your account to pair TV."
@@ -296,9 +319,6 @@ class LoginFragment : Fragment() {
                         Toast.LENGTH_LONG
                     ).show()
                     setLoading(false)
-                    // Reset status to pending so phone can try again without creating a new code
-                    val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    firestore.collection("pairing_codes").document(code).update("status", "pending")
                 }
             }
     }
@@ -317,10 +337,11 @@ class LoginFragment : Fragment() {
                     }
                     stopPairingListener()
                     val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    firestore.collection("pairing_codes").document(code).delete()
+                    firestore.collection(TvPairing.COLLECTION).document(code).delete()
                     try {
                         onLoginSuccess()
                     } catch (e: Exception) {
+                        isCompletingPairing = false
                         Log.e(TAG, "loginWithCredentials: onLoginSuccess navigation crashed", e)
                         Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()
                         setLoading(false)
@@ -337,22 +358,22 @@ class LoginFragment : Fragment() {
                                 }
                                 stopPairingListener()
                                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                firestore.collection("pairing_codes").document(code).delete()
+                                firestore.collection(TvPairing.COLLECTION).document(code).delete()
                                 try {
                                     onLoginSuccess()
                                 } catch (e: Exception) {
+                                    isCompletingPairing = false
                                     Log.e(TAG, "loginWithCredentials: onLoginSuccess navigation crashed after createUser", e)
                                     Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()
                                     setLoading(false)
                                 }
                             } else {
+                                isCompletingPairing = false
                                 Log.e(TAG, "loginWithCredentials: createUser FAILED", signUpTask.exception)
                                 binding.loginErrorText.visibility = View.VISIBLE
                                 binding.loginErrorText.text = "Pairing login failed. Incorrect credentials."
                                 Toast.makeText(context, "Pairing login failed.", Toast.LENGTH_SHORT).show()
                                 setLoading(false)
-                                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                firestore.collection("pairing_codes").document(code).update("status", "pending")
                             }
                         }
                 }

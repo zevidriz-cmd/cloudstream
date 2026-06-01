@@ -19,7 +19,6 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.FragmentPairTvBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.DataStore.getKey
-import com.lagradost.cloudstream3.utils.DataStore.setKey
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 
@@ -37,9 +36,10 @@ class FragmentPairTv : Fragment() {
             try {
                 val account = task.getResult(ApiException::class.java)!!
                 val code = pendingPairingCode
-                if (code != null && account.idToken != null) {
+                val idToken = account.idToken
+                if (code != null && !idToken.isNullOrBlank()) {
                     // We got a fresh token, now complete the pairing
-                    completePairing(code, account.idToken!!, account.email)
+                    completePairing(code, idToken, account.email)
                 } else {
                     Toast.makeText(context, "Google sign in did not return a token.", Toast.LENGTH_SHORT).show()
                     setLoading(false)
@@ -67,8 +67,8 @@ class FragmentPairTv : Fragment() {
         }
 
         binding.pairSubmitButton.setOnClickListener {
-            val code = binding.pairCodeInput.text.toString().trim().uppercase()
-            if (code.length != 6) {
+            val code = TvPairing.normalizeCode(binding.pairCodeInput.text.toString())
+            if (code == null) {
                 Toast.makeText(context, "Pairing code must be exactly 6 characters.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -79,13 +79,11 @@ class FragmentPairTv : Fragment() {
 
     private fun submitPairingCode(rawCode: String) {
         val ctx = context ?: return
-        
-        // Parse URI if it's a deep link
-        val code = try {
-            val uri = android.net.Uri.parse(rawCode)
-            uri.getQueryParameter("code") ?: rawCode
-        } catch (e: Exception) {
-            rawCode
+
+        val code = TvPairing.normalizeCode(rawCode)
+        if (code == null) {
+            Toast.makeText(ctx, "Invalid pairing code.", Toast.LENGTH_SHORT).show()
+            return
         }
 
         val email = ctx.getKey<String>("firebase_email")
@@ -117,21 +115,20 @@ class FragmentPairTv : Fragment() {
                     val googleSignInClient = GoogleSignIn.getClient(ctx, gso)
                     
                     googleSignInClient.silentSignIn().addOnSuccessListener { account ->
-                        completePairing(code, account.idToken!!, account.email)
+                        val idToken = account.idToken
+                        if (idToken.isNullOrBlank()) {
+                            startInteractiveGooglePairing(code)
+                        } else {
+                            completePairing(code, idToken, account.email)
+                        }
                     }.addOnFailureListener { e ->
                         logError(e)
-                        pendingPairingCode = code
-                        val interactiveGso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken(ctx.getString(R.string.default_web_client_id))
-                            .requestEmail()
-                            .build()
-                        val interactiveClient = GoogleSignIn.getClient(ctx, interactiveGso)
-                        googleSignInLauncher.launch(interactiveClient.signInIntent)
+                        startInteractiveGooglePairing(code)
                     }
                 } else {
                     Toast.makeText(ctx, "Please log in using email/password first to pair TV.", Toast.LENGTH_LONG).show()
+                    setLoading(false)
                 }
-                setLoading(false)
 
             } catch (e: Exception) {
                 logError(e)
@@ -141,13 +138,24 @@ class FragmentPairTv : Fragment() {
         }
     }
 
+    private fun startInteractiveGooglePairing(code: String) {
+        val ctx = context ?: return
+        pendingPairingCode = code
+        val interactiveGso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(ctx.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        val interactiveClient = GoogleSignIn.getClient(ctx, interactiveGso)
+        googleSignInLauncher.launch(interactiveClient.signInIntent)
+    }
+
     /** Complete pairing using a Google ID token */
     private fun completePairing(code: String, googleIdToken: String, email: String?) {
         lifecycleScope.launch {
             try {
                 val ctx = context ?: return@launch
                 val firestore = FirebaseFirestore.getInstance()
-                val docRef = firestore.collection("pairing_codes").document(code)
+                val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
                 Log.d("FragmentPairTv", "completePairing: Fetching pairing doc for code=$code")
                 val snapshot = docRef.get().await()
 
@@ -181,8 +189,13 @@ class FragmentPairTv : Fragment() {
                 docRef.update(updateData).await()
                 Log.d("FragmentPairTv", "completePairing: Firestore update successful for code=$code")
 
-                Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
-                activity?.onBackPressed()
+                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
+                if (TvPairing.waitForTvCompletion(docRef)) {
+                    Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                    activity?.onBackPressed()
+                } else {
+                    Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                }
 
             } catch (e: Exception) {
                 logError(e)
@@ -200,7 +213,7 @@ class FragmentPairTv : Fragment() {
             try {
                 val ctx = context ?: return@launch
                 val firestore = FirebaseFirestore.getInstance()
-                val docRef = firestore.collection("pairing_codes").document(code)
+                val docRef = firestore.collection(TvPairing.COLLECTION).document(code)
                 Log.d("FragmentPairTv", "completePairingWithCredentials: Fetching doc for code=$code")
                 val snapshot = docRef.get().await()
 
@@ -231,8 +244,13 @@ class FragmentPairTv : Fragment() {
                 docRef.update(updateData).await()
                 Log.d("FragmentPairTv", "completePairingWithCredentials: Firestore update successful for code=$code")
 
-                Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
-                activity?.onBackPressed()
+                Toast.makeText(ctx, "Pairing approved. Waiting for TV sign-in...", Toast.LENGTH_SHORT).show()
+                if (TvPairing.waitForTvCompletion(docRef)) {
+                    Toast.makeText(ctx, "TV paired successfully!", Toast.LENGTH_LONG).show()
+                    activity?.onBackPressed()
+                } else {
+                    Toast.makeText(ctx, "TV did not complete sign-in. Please try a new code.", Toast.LENGTH_LONG).show()
+                }
 
             } catch (e: Exception) {
                 logError(e)
@@ -245,6 +263,7 @@ class FragmentPairTv : Fragment() {
     }
 
     private fun setLoading(isLoading: Boolean) {
+        val binding = _binding ?: return
         binding.pairLoading.isVisible = isLoading
         binding.pairCodeInput.isEnabled = !isLoading
         binding.pairSubmitButton.isEnabled = !isLoading
