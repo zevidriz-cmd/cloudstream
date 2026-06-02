@@ -130,9 +130,19 @@ class ProfileSelectorFragment : Fragment() {
             dialog.onProfileSaved = { loadProfiles() }
             dialog.show(childFragmentManager, ProfileEditorDialog.TAG)
         } else if (isEditMode) {
-            val dialog = ProfileEditorDialog.newInstance(profile)
-            dialog.onProfileSaved = { loadProfiles() }
-            dialog.show(childFragmentManager, ProfileEditorDialog.TAG)
+            if (profile.isLocked) {
+                val dialog = PinEntryDialog.newInstance(profile)
+                dialog.onPinVerified = {
+                    val editDialog = ProfileEditorDialog.newInstance(profile)
+                    editDialog.onProfileSaved = { loadProfiles() }
+                    editDialog.show(childFragmentManager, ProfileEditorDialog.TAG)
+                }
+                dialog.show(childFragmentManager, PinEntryDialog.TAG)
+            } else {
+                val dialog = ProfileEditorDialog.newInstance(profile)
+                dialog.onProfileSaved = { loadProfiles() }
+                dialog.show(childFragmentManager, ProfileEditorDialog.TAG)
+            }
         } else {
             // Regular selection mode
             if (profile.isLocked) {
